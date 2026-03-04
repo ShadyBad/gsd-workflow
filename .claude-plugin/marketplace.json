@@ -3,7 +3,7 @@
   "owner": { "name": "ShadyBad" },
   "plugins": [
     {
-      "name": "gsd-dev",
+      "name": "gsd-ship",
       "source": {
         "source": "github",
         "repo": "ShadyBad/gsd-workflow"

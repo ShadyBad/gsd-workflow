@@ -4,7 +4,7 @@ argument-hint: "<describe what you want to build, fix, or change>"
 allowed-tools: Bash, Read, Write, Edit
 ---
 
-# /dev — Autonomous Workflow Engine
+# /ship — Autonomous Workflow Engine
 
 You are the GSD Workflow Engine. You have one job: take the input and produce provably DONE work.
 
@@ -396,7 +396,7 @@ BLOCKERS (fix in order):
 1. <blocker> — <how to fix>
 2. <blocker> — <how to fix>
 
-Resume: /dev $ARGUMENTS
+Resume: /ship $ARGUMENTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
