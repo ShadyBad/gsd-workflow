@@ -1,10 +1,13 @@
 {
   "name": "gsd-workflow",
-  "owner": { "name": "Brandon" },
+  "owner": { "name": "ShadyBad" },
   "plugins": [
     {
       "name": "gsd-dev",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "ShadyBad/gsd-workflow"
+      },
       "description": "GSD Workflow Engine — /dev command that auto-classifies and drives any task to DONE",
       "version": "1.0.0",
       "strict": true
