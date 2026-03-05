@@ -1,7 +1,7 @@
 ---
 description: "GSD Verify — Evidence pack generation and Done Gate evaluation. Produces DONE or NOT_DONE with ranked next actions. Final phase."
 argument-hint: "<run_id>"
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash, Read, Write, Grep, Glob
 ---
 
 # /verify — Evidence Pack + Done Gate
@@ -16,6 +16,8 @@ Read:
 - `runs/$ARGUMENTS/intake/track_decision.json` — determine MICRO / STANDARD / FULL
 - `runs/$ARGUMENTS/intake/acceptance_criteria.md`
 - `runs/$ARGUMENTS/execute/criteria_status.md`
+- `capabilities.yaml` — capability limits
+- `done_gate.yaml` — gate definitions for the active track
 
 Write audit event:
 ```json
@@ -28,13 +30,13 @@ Create evidence directory: `runs/$ARGUMENTS/final/evidence/`
 
 Detect the project toolchain and run the appropriate commands. Always check `CLAUDE.md` first — it overrides auto-detection.
 
-| Detect | Lint | Type Check | Test |
-|---|---|---|---|
-| `package.json` | `npm run lint` | `npm run type-check` | `npm test` |
-| `pyproject.toml` | `uv run ruff check .` or `make lint` | `uv run mypy .` (if configured) | `uv run pytest` or `make test` |
-| `Cargo.toml` | `cargo clippy` | N/A (compiled) | `cargo test` |
-| `Makefile` | `make lint` | `make type-check` (if exists) | `make test` |
-| `go.mod` | `go vet ./...` | N/A (compiled) | `go test ./...` |
+| Detect | Lint | Type Check | Test | Audit |
+|---|---|---|---|---|
+| `package.json` | `npm run lint` | `npm run type-check` | `npm test` | `npm audit --json` |
+| `pyproject.toml` | `uv run ruff check .` or `make lint` | `uv run mypy .` (if configured) | `uv run pytest` or `make test` | `uv run pip-audit` |
+| `Cargo.toml` | `cargo clippy` | N/A (compiled) | `cargo test` | `cargo audit` |
+| `Makefile` | `make lint` | `make type-check` (if exists) | `make test` | N/A |
+| `go.mod` | `go vet ./...` | N/A (compiled) | `go test ./...` | `govulncheck ./...` |
 
 Capture ALL output to log files. Append exit code to each:
 ```bash
@@ -45,17 +47,7 @@ If a command doesn't exist, document why in a `<step>_waiver.md` file.
 
 ## Step 3: Secrets Scan
 
-Scan all artifacts and source for leaked secrets:
-
-```bash
-# Scan for common secret patterns
-grep -r "sk-[a-zA-Z0-9]\+" runs/$ARGUMENTS/ src/ --include="*.json" --include="*.log" --include="*.md" | grep -v "[REDACTED]" > /tmp/secret_scan.txt 2>&1
-grep -r "password=" runs/$ARGUMENTS/ src/ >> /tmp/secret_scan.txt 2>&1
-grep -r "token=" runs/$ARGUMENTS/ src/ >> /tmp/secret_scan.txt 2>&1
-grep -r "api_key" runs/$ARGUMENTS/ src/ >> /tmp/secret_scan.txt 2>&1
-```
-
-Write results to `runs/$ARGUMENTS/final/redaction_scan.json`:
+Scan all artifacts and source for leaked secrets. Write `runs/$ARGUMENTS/final/redaction_scan.json`:
 ```json
 {
   "findings": [],
@@ -67,45 +59,57 @@ Write results to `runs/$ARGUMENTS/final/redaction_scan.json`:
 
 If findings > 0: **STOP. Redact before proceeding.**
 
-## Step 4: Build Evidence Pack
+## Step 4: FULL Track — Evals
 
-Collect proof for every Done Gate check.
-
-Write `runs/$ARGUMENTS/final/verification.md`:
-```markdown
-# Verification Report
-
-## Run ID: $ARGUMENTS
-## Track: MICRO | STANDARD | FULL
-## Timestamp: <ISO8601>
-
-## Gate Results
-
-| Gate | Status | Proof |
-|---|---|---|
-| Scope locked | ✓ PASS / ✗ FAIL | runs/.../intake/scope.md |
-| Acceptance criteria | ✓ PASS / ✗ FAIL | runs/.../intake/acceptance_criteria.md |
-| Lint | ✓ PASS / ✗ FAIL | runs/.../final/lint.log |
-| Type check | ✓ PASS / ✗ FAIL | runs/.../final/typecheck.log |
-| Unit tests | ✓ PASS / ✗ FAIL | runs/.../final/unit_tests.log |
-| No secrets | ✓ PASS / ✗ FAIL | runs/.../final/redaction_scan.json |
-| Audit trail | ✓ PASS / ✗ FAIL | runs/.../audit/events.jsonl |
-| Scope changes tracked | ✓ PASS / N/A | docs/scope-changes/ |
-<FULL track gates if applicable>
-
-## Acceptance Criteria
-<paste from criteria_status.md>
-```
+If FULL track and `evals/golden_cases.jsonl` exists:
+- Run all golden cases
+- Compare against baselines
+- Write `runs/$ARGUMENTS/evals/eval_report.json`
 
 ## Step 5: FULL Track — Integration Tests
 
-If FULL track, run integration tests using the project's toolchain (check `CLAUDE.md` first, then detect from project files). Capture output to `runs/$ARGUMENTS/final/integration_tests.log`.
+If FULL track, run integration tests using the project's toolchain (check `CLAUDE.md` first). Capture output to `runs/$ARGUMENTS/final/integration_tests.log`.
 
-If integration tests don't exist yet: create `runs/$ARGUMENTS/final/integration_test_waiver.md` explaining why and when they'll be added.
+If integration tests don't exist: create `runs/$ARGUMENTS/final/integration_test_waiver.md`.
 
-## Step 6: Done Gate Evaluation
+## Step 6: Build Evidence Pack
 
-Read `done_gate.yaml`. Evaluate every gate against evidence collected.
+Write `runs/$ARGUMENTS/final/evidence_manifest.md`:
+
+```markdown
+# Evidence Pack — $ARGUMENTS
+
+## Track: MICRO | STANDARD | FULL
+## Timestamp: <ISO8601>
+
+| Gate | Status | Proof |
+|---|---|---|
+| scope_locked | PASS/FAIL | runs/.../intake/scope.md |
+| acceptance_criteria | PASS/FAIL | runs/.../execute/criteria_status.md |
+| lint | PASS/FAIL | runs/.../final/lint.log |
+| type_check | PASS/FAIL/N/A | runs/.../final/typecheck.log |
+| tests | PASS/FAIL | runs/.../final/tests.log |
+| no_secrets | PASS/FAIL | runs/.../final/redaction_scan.json |
+| audit_trail | PASS/FAIL | runs/.../audit/events.jsonl |
+| scope_changes | PASS/N/A | runs/.../execute/scope_flags.md |
+```
+
+For FULL track, also include:
+```markdown
+| committee_review | PASS/FAIL | runs/.../committee/review_summary.md |
+| threat_model | PASS/FAIL | runs/.../security/threat_model.md |
+| security_scan | PASS/FAIL | runs/.../security/scan_results.json |
+| privacy_review | PASS/N/A | runs/.../security/privacy_review.md |
+| evals | PASS/FAIL/N/A | runs/.../evals/eval_report.json |
+| integration_tests | PASS/FAIL/WAIVER | runs/.../final/integration_tests.log |
+| observability | PASS/FAIL | runs/.../timeline.json |
+| hardening | PASS/FAIL | runs/.../hardening/failure_modes.md |
+| legal | PASS/FAIL/N/A | runs/.../legal/license_review.md |
+```
+
+## Step 7: Done Gate Evaluation
+
+Read `done_gate.yaml`. Evaluate every gate for the active track against evidence.
 
 Write `runs/$ARGUMENTS/final/done_gate.json`:
 ```json
@@ -115,25 +119,19 @@ Write `runs/$ARGUMENTS/final/done_gate.json`:
   "timestamp": "<ISO8601>",
   "status": "DONE | NOT_DONE",
   "gates": {
-    "scope_locked": {"status": "PASS | FAIL", "proof": "<path>"},
-    "acceptance_criteria": {"status": "PASS | FAIL", "proof": "<path>"},
-    "lint_pass": {"status": "PASS | FAIL", "exit_code": 0},
-    "type_check_pass": {"status": "PASS | FAIL", "exit_code": 0},
-    "unit_tests_pass": {"status": "PASS | FAIL", "exit_code": 0},
-    "no_secrets_in_artifacts": {"status": "PASS | FAIL", "findings": 0},
-    "audit_trail_exists": {"status": "PASS | FAIL", "proof": "<path>"}
+    "<gate_id>": {"status": "PASS | FAIL | N/A", "proof": "<path>"}
   },
   "failed_gates": [],
   "next_actions": []
 }
 ```
 
-## Step 7: Final Output
+## Step 8: Final Output
 
 ### If DONE:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✓ DONE
+DONE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Run ID:  $ARGUMENTS
 Track:   MICRO | STANDARD | FULL
@@ -146,10 +144,10 @@ Ready to commit / ship.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### If NOT_DONE:
+### If NOT DONE:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✗ NOT DONE
+NOT DONE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Run ID:  $ARGUMENTS
 

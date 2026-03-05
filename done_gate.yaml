@@ -1,0 +1,109 @@
+# done_gate.yaml — The Completion Contract
+# DONE only if ALL required gates pass for the active track.
+# This file is read by Phase 10 (Verify) and the /verify command.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Gates required for ALL tracks (MICRO, STANDARD, FULL)
+# ─────────────────────────────────────────────────────────────────────────────
+core:
+  - id: scope_locked
+    description: "Scope document exists and was not silently modified"
+    proof: "runs/<run_id>/intake/scope.md"
+
+  - id: acceptance_criteria_met
+    description: "All acceptance criteria verified with evidence"
+    proof: "runs/<run_id>/execute/criteria_status.md"
+
+  - id: lint_pass
+    description: "Linter passes with zero errors"
+    proof: "runs/<run_id>/final/lint.log"
+
+  - id: tests_pass
+    description: "All tests pass"
+    proof: "runs/<run_id>/final/tests.log"
+
+  - id: no_secrets
+    description: "No secrets in source or artifacts"
+    proof: "runs/<run_id>/final/redaction_scan.json"
+
+  - id: audit_trail
+    description: "Audit trail exists with all phase transition events"
+    proof: "runs/<run_id>/audit/events.jsonl"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Additional gates for STANDARD + FULL tracks
+# ─────────────────────────────────────────────────────────────────────────────
+standard:
+  - id: type_check_pass
+    description: "Type checker passes (or N/A documented with waiver)"
+    proof: "runs/<run_id>/final/typecheck.log"
+
+  - id: scope_changes_tracked
+    description: "Any scope drift documented via change control"
+    proof: "runs/<run_id>/execute/scope_flags.md"
+    required_if: scope_changed
+
+  - id: acceptance_criteria_confirmed
+    description: "User confirmed acceptance criteria before implementation"
+    proof: "runs/<run_id>/intake/criteria_confirmed.md"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Additional gates for FULL track only
+# ─────────────────────────────────────────────────────────────────────────────
+full:
+  # Security (Phase 3)
+  - id: threat_model
+    description: "Threat model written for identified attack vectors"
+    proof: "runs/<run_id>/security/threat_model.md"
+
+  - id: security_scan_clean
+    description: "Zero critical findings in dependency + secret scan"
+    proof: "runs/<run_id>/security/scan_results.json"
+
+  - id: privacy_review
+    description: "Privacy impact assessed when PII is touched"
+    proof: "runs/<run_id>/security/privacy_review.md"
+    required_if: pii_touched
+
+  # Committee (Phase 1.5)
+  - id: committee_review
+    description: "Agent committee reviewed approach before implementation"
+    proof: "runs/<run_id>/committee/review_summary.md"
+
+  # Evals (Phase 4)
+  - id: evals_pass
+    description: "Golden case evals meet threshold (no regressions)"
+    proof: "runs/<run_id>/evals/eval_report.json"
+    required_if: evals_exist
+
+  # Integration (Phase 10)
+  - id: integration_tests
+    description: "Integration tests pass (or waiver on file)"
+    proof: "runs/<run_id>/final/integration_tests.log"
+
+  # Observability (Phase 6)
+  - id: observability
+    description: "Run is fully reconstructable from artifacts"
+    proof: "runs/<run_id>/timeline.json"
+
+  # Hardening (Phase 7)
+  - id: hardening
+    description: "Failure modes documented with recovery paths"
+    proof: "runs/<run_id>/hardening/failure_modes.md"
+
+  # Legal (Phase 8)
+  - id: legal_compliance
+    description: "License compliance checked for new dependencies"
+    proof: "runs/<run_id>/legal/license_review.md"
+    required_if: new_dependency
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Output spec
+# ─────────────────────────────────────────────────────────────────────────────
+output:
+  status_values: [DONE, NOT_DONE]
+  format: "runs/<run_id>/final/done_gate.json"
+  includes:
+    - gate_results
+    - evidence_manifest
+    - ranked_next_actions  # if NOT_DONE

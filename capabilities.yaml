@@ -1,0 +1,85 @@
+# capabilities.yaml — Deny-by-Default Capability Manifest
+# Every privileged action must pass: enabled + allowlist + budget + phase-allowed + reason
+# This file is read by the workflow engine at Phase 0 (Orientation/Setup).
+
+repo:
+  enabled: true
+  allowed_operations: [read, write, create, delete]
+  denied_paths:
+    - ".env*"
+    - "**/*.pem"
+    - "**/*.key"
+    - "**/id_rsa*"
+    - "**/credentials*"
+    - "**/.aws/**"
+    - "**/.gcloud/**"
+
+browser:
+  enabled: true
+  allowed_domains: []  # populated per-run from scope
+  screenshot_redaction: true
+  max_pages_per_run: 20
+  allowed_phases: [5, 10]  # Execute + Verify only
+
+crawl:
+  enabled: true
+  allowed_domains: []  # populated per-run from scope
+  max_pages: 50
+  redact_output: true
+  allowed_phases: [1, 10]  # Intake + Verify only
+
+command_exec:
+  enabled: true
+  denylist:
+    - "rm -rf /"
+    - "curl|bash"
+    - "wget|bash"
+    - "chmod 777"
+  timeout_ms: 120000
+
+agent_spawn:
+  enabled: true
+  max_per_phase: 3
+  max_per_run: 15
+  require_role: true
+  roles:
+    - id: security_reviewer
+      description: "Reviews code and architecture for security vulnerabilities, threat vectors, and compliance gaps"
+      allowed_phases: [1.5, 3, 10]
+    - id: architecture_reviewer
+      description: "Reviews system design, interfaces, data flow, and technical trade-offs"
+      allowed_phases: [1.5, 2]
+    - id: quality_reviewer
+      description: "Reviews code quality, test coverage, error handling, and maintainability"
+      allowed_phases: [1.5, 4, 10]
+    - id: legal_reviewer
+      description: "Reviews dependency licenses, privacy implications, and compliance requirements"
+      allowed_phases: [1.5, 8]
+
+ci_read:
+  enabled: true
+  allowed_phases: [0, 4, 10]
+
+redaction:
+  handling: reference_only  # NEVER readable or printed
+  # Patterns that trigger redaction (matched as regex)
+  # These detect leaked credentials in tool input/output
+  pattern_types:
+    - type: api_key_prefix
+      description: "Matches sk-, ghp_, glpat-, AKIA prefixed keys"
+    - type: bearer_auth
+      description: "Matches Bearer authorization headers"
+    - type: slack_bot
+      description: "Matches xoxb- Slack bot tokens"
+    - type: key_value_secrets
+      description: "Matches keyword=value where keyword is a sensitive name"
+    - type: connection_strings
+      description: "Matches database and service connection URIs with embedded credentials"
+  format: "[REDACTED:<type>]"
+
+budgets:
+  max_tool_calls_per_phase: 50
+  max_tool_calls_per_run: 500
+  max_agent_spawns_per_run: 15
+  max_file_writes_per_phase: 30
+  max_file_writes_per_run: 200
