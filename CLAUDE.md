@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-This is the **GSD Workflow Engine** — a Claude Code plugin (`gsd-ship` v1.0.0) that provides an autonomous development lifecycle. It is NOT a traditional application. The primary consumers are Claude Code instances running the workflow commands.
+This is the **GSD Workflow Engine** — a Claude Code plugin (`gsd-ship` v2.0.0) that provides an autonomous development lifecycle. It is NOT a traditional application. The primary consumers are Claude Code instances running the workflow commands.
 
 The engine implements a Superpowers-style workflow that turns any request into provably DONE work, using bounded capabilities (repo access, browser, crawling, agent committees) with strict security, budgets, audit trails, and regression evals.
 
