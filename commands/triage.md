@@ -1,12 +1,12 @@
 ---
-description: "GSD Triage — Start every task here. Captures scope, selects Lite vs Full track, locks acceptance criteria, generates next actions. Required before /plan or /execute."
+description: "GSD Triage — Start here for manual phased workflow. Captures scope, selects MICRO/STANDARD/FULL track, locks acceptance criteria. Required before /plan or /execute. (Use /ship instead for fully autonomous flow.)"
 argument-hint: "<feature/change description>"
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash, Read, Write, Grep, Glob
 ---
 
 # /triage — Intake & Track Selection
 
-You are running Phase 1 of the GSD Workflow Engine.
+You are running the Triage phase of the GSD Workflow Engine.
 
 ## Step 1: Generate Run ID
 
@@ -28,6 +28,8 @@ to `runs/<run_id>/audit/events.jsonl`
 
 Using the input: **$ARGUMENTS**
 
+Before asking questions, search the codebase with Grep and Glob to understand existing code, patterns, and conventions relevant to the task.
+
 Ask the following clarifying questions IF the input is ambiguous. If input is clear, use smart defaults and proceed.
 
 **Clarifying questions (ask max 3, only if truly unclear):**
@@ -45,7 +47,7 @@ Write `runs/<run_id>/intake/scope.md`:
 ## In Scope
 - <explicit inclusions>
 
-## Out of Scope  
+## Out of Scope
 - <explicit exclusions>
 
 ## Constraints
@@ -57,7 +59,21 @@ Write `runs/<run_id>/intake/scope.md`:
 
 ## Step 3: Track Selection
 
-Evaluate against FULL track triggers. Check each:
+Evaluate against track signals. Check each:
+
+### MICRO signals (fast path):
+- Fix a typo / rename / cosmetic change
+- Add/update a single config value
+- Update documentation only
+- Fix an obvious bug with a clear, localized fix (1-3 files)
+
+### STANDARD signals (needs planning):
+- New feature touching 3+ files
+- Refactor of a module or component
+- Adding a new API endpoint
+- New UI component or page
+
+### FULL signals (security/compliance/high-risk):
 
 | Trigger | Present? |
 |---|---|
@@ -70,15 +86,16 @@ Evaluate against FULL track triggers. Check each:
 | Security-sensitive code paths | Yes / No |
 
 **Decision:**
-- 0 triggers → **LITE track**
-- 1+ triggers → **FULL track**
-- Ambiguous → **FULL track** (when in doubt, full)
+- 0 FULL triggers + small scope → **MICRO track**
+- 0 FULL triggers + multi-file scope → **STANDARD track**
+- 1+ FULL triggers → **FULL track**
+- Ambiguous → always choose the more rigorous track
 
 Write `runs/<run_id>/intake/track_decision.json`:
 ```json
 {
   "run_id": "<run_id>",
-  "track": "LITE | FULL",
+  "track": "MICRO | STANDARD | FULL",
   "triggers_found": ["<list>"],
   "rationale": "<1 sentence>"
 }
@@ -107,7 +124,7 @@ All criteria checked. Done Gate passes. No open blockers.
 ## Step 5: Next Actions
 
 Write `runs/<run_id>/intake/next_actions.md` with:
-- The track selected (LITE or FULL)
+- The track selected (MICRO, STANDARD, or FULL)
 - Ordered phases to run
 - Exact commands to run next
 - Any pre-conditions or decisions needed before proceeding
@@ -120,7 +137,7 @@ Print to terminal:
 TRIAGE COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Run ID:  <run_id>
-Track:   LITE | FULL
+Track:   MICRO | STANDARD | FULL
 Scope:   <1-line summary>
 
 Acceptance Criteria: <N> defined

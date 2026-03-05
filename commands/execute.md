@@ -1,12 +1,12 @@
 ---
 description: "GSD Execute — Implementation phase. Runs vertical slice first, gates on acceptance criteria. Run after /plan."
 argument-hint: "<run_id>"
-allowed-tools: Bash, Read, Write, Edit
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # /execute — Implementation
 
-You are running Phase 5 of the GSD Workflow Engine.
+You are running the Execute phase of the GSD Workflow Engine.
 
 Run ID: **$ARGUMENTS**
 
@@ -60,11 +60,17 @@ After each checklist item, append to `runs/$ARGUMENTS/execute/progress.md`:
 
 ## Step 4: Incremental Verification
 
-After the vertical slice is complete, run:
-```bash
-# Run whatever your project's test command is
-npm test   # or pytest, cargo test, etc.
-```
+After the vertical slice is complete, run the project's test command. Detect the toolchain:
+
+| Detect | Test Command |
+|---|---|
+| `package.json` | `npm test` |
+| `pyproject.toml` | `uv run pytest` or `make test` |
+| `Cargo.toml` | `cargo test` |
+| `Makefile` with test target | `make test` |
+| `go.mod` | `go test ./...` |
+
+Always check `CLAUDE.md` first — it overrides auto-detection.
 
 If tests fail: fix before continuing. Do not stack failures.
 
@@ -73,9 +79,14 @@ Write results to `runs/$ARGUMENTS/execute/interim_test_results.log`
 ## Step 5: Complete Checklist
 
 Continue through remaining checklist items. After each logical group:
-1. Run lint
-2. Run type check  
+1. Run lint (detect toolchain — see MICRO toolchain table in `/ship`)
+2. Run type check (if applicable for the language)
 3. Run affected tests
+
+Output progress after each task:
+```
+── Implementing [<completed>/<total> tasks] ──
+```
 
 Fail fast. Fix in place. Don't defer failures.
 
@@ -84,10 +95,10 @@ Fail fast. Fix in place. Don't defer failures.
 If track is FULL, after implementation:
 
 Run or simulate:
-- Dependency vulnerability scan: `npm audit` / `pip-audit` / `cargo audit`
+- Dependency vulnerability scan (detect toolchain: `npm audit` / `uv run pip-audit` / `cargo audit` / `govulncheck`)
 - Review against `runs/$ARGUMENTS/plan/security_surface.md`
 - Check every trust boundary is validated
-- Confirm no secrets in code (`git grep -i "api_key\|password\|secret\|token" src/`)
+- Confirm no secrets in code (`git grep -iE "api_key|password|secret|token" -- '*.py' '*.js' '*.ts' '*.go' '*.rs' | grep -v "process\.env\|os\.environ\|getenv\|placeholder\|example\|test\|mock"`)
 
 Write `runs/$ARGUMENTS/security/scan_results.json`:
 ```json

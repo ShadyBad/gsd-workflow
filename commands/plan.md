@@ -1,12 +1,12 @@
 ---
 description: "GSD Plan — Architecture, interfaces, phase IO schemas, error taxonomy. Run after /triage. Required before /execute."
 argument-hint: "<run_id>"
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash, Read, Write, Grep, Glob
 ---
 
 # /plan — Architecture & Interface Design
 
-You are running Phase 2 of the GSD Workflow Engine.
+You are running the Plan phase of the GSD Workflow Engine.
 
 Run ID: **$ARGUMENTS**
 

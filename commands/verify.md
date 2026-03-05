@@ -6,14 +6,14 @@ allowed-tools: Bash, Read, Write
 
 # /verify — Evidence Pack + Done Gate
 
-You are running Phase 10 of the GSD Workflow Engine.
+You are running the Verify phase of the GSD Workflow Engine.
 
 Run ID: **$ARGUMENTS**
 
 ## Step 1: Load State
 
 Read:
-- `runs/$ARGUMENTS/intake/track_decision.json` — determine Lite vs Full
+- `runs/$ARGUMENTS/intake/track_decision.json` — determine MICRO / STANDARD / FULL
 - `runs/$ARGUMENTS/intake/acceptance_criteria.md`
 - `runs/$ARGUMENTS/execute/criteria_status.md`
 
@@ -26,23 +26,20 @@ Create evidence directory: `runs/$ARGUMENTS/final/evidence/`
 
 ## Step 2: Run Verification Suite
 
-Execute these commands and capture ALL output to log files:
+Detect the project toolchain and run the appropriate commands. Always check `CLAUDE.md` first — it overrides auto-detection.
 
+| Detect | Lint | Type Check | Test |
+|---|---|---|---|
+| `package.json` | `npm run lint` | `npm run type-check` | `npm test` |
+| `pyproject.toml` | `uv run ruff check .` or `make lint` | `uv run mypy .` (if configured) | `uv run pytest` or `make test` |
+| `Cargo.toml` | `cargo clippy` | N/A (compiled) | `cargo test` |
+| `Makefile` | `make lint` | `make type-check` (if exists) | `make test` |
+| `go.mod` | `go vet ./...` | N/A (compiled) | `go test ./...` |
+
+Capture ALL output to log files. Append exit code to each:
 ```bash
-# Lint
-npm run lint > runs/$ARGUMENTS/final/lint.log 2>&1
-echo "LINT_EXIT=$?" >> runs/$ARGUMENTS/final/lint.log
-
-# Type check
-npm run type-check > runs/$ARGUMENTS/final/typecheck.log 2>&1  
-echo "TYPECHECK_EXIT=$?" >> runs/$ARGUMENTS/final/typecheck.log
-
-# Unit tests
-npm test > runs/$ARGUMENTS/final/unit_tests.log 2>&1
-echo "UNIT_EXIT=$?" >> runs/$ARGUMENTS/final/unit_tests.log
+echo "EXIT=$?" >> runs/$ARGUMENTS/final/<step>.log
 ```
-
-Adapt commands to your actual project toolchain.
 
 If a command doesn't exist, document why in a `<step>_waiver.md` file.
 
@@ -79,7 +76,7 @@ Write `runs/$ARGUMENTS/final/verification.md`:
 # Verification Report
 
 ## Run ID: $ARGUMENTS
-## Track: LITE | FULL
+## Track: MICRO | STANDARD | FULL
 ## Timestamp: <ISO8601>
 
 ## Gate Results
@@ -102,11 +99,7 @@ Write `runs/$ARGUMENTS/final/verification.md`:
 
 ## Step 5: FULL Track — Integration Tests
 
-If FULL track:
-```bash
-npm run test:integration > runs/$ARGUMENTS/final/integration_tests.log 2>&1
-echo "INTEGRATION_EXIT=$?" >> runs/$ARGUMENTS/final/integration_tests.log
-```
+If FULL track, run integration tests using the project's toolchain (check `CLAUDE.md` first, then detect from project files). Capture output to `runs/$ARGUMENTS/final/integration_tests.log`.
 
 If integration tests don't exist yet: create `runs/$ARGUMENTS/final/integration_test_waiver.md` explaining why and when they'll be added.
 
@@ -118,7 +111,7 @@ Write `runs/$ARGUMENTS/final/done_gate.json`:
 ```json
 {
   "run_id": "$ARGUMENTS",
-  "track": "LITE | FULL",
+  "track": "MICRO | STANDARD | FULL",
   "timestamp": "<ISO8601>",
   "status": "DONE | NOT_DONE",
   "gates": {
@@ -143,7 +136,7 @@ Write `runs/$ARGUMENTS/final/done_gate.json`:
 ✓ DONE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Run ID:  $ARGUMENTS
-Track:   LITE | FULL
+Track:   MICRO | STANDARD | FULL
 Gates:   <N>/<N> passed
 
 Evidence: runs/$ARGUMENTS/final/

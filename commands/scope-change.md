@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write
 
 # /scope-change — Change Control
 
-You are running Phase 9 of the GSD Workflow Engine.
+You are running the Scope Change phase of the GSD Workflow Engine.
 
 Arguments: **$ARGUMENTS**
 (Expected format: `<run_id> <change description>`)
@@ -60,8 +60,8 @@ Write `docs/scope-changes/<SC-ID>.md`:
 | <risk> | H/M/L | <mitigation> |
 
 ### Track Re-evaluation
-- Original track: LITE | FULL
-- Change requires FULL track upgrade? Yes / No
+- Original track: MICRO | STANDARD | FULL
+- Change requires track upgrade? Yes / No
 - Reason: <if yes, explain>
 
 ### Effort Delta

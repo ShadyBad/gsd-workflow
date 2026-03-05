@@ -89,11 +89,27 @@ Write `runs/review-<timestamp>/cost_analysis.md`:
 <what to cut, what to optimize>
 ```
 
-## Step 6: CLAUDE.md Health Check
+## Step 6: Lessons & Self-Improvement Review
+
+### 6a — Aggregate Lessons
+Read `runs/lessons.jsonl`. Group by `type`. Identify recurring patterns (3+ occurrences).
+
+For each recurring pattern:
+- Determine if a systemic fix exists
+- Check if the pattern was already addressed in `runs/improvements.md`
+- If not, add a new improvement proposal
+
+### 6b — Review Pending Improvements
+Read `runs/improvements.md`. For any `Status: PROPOSED`:
+- Is the evidence strong enough to apply? (3+ occurrences, clear root cause)
+- Present to user for approval
+- If approved, apply and mark `Status: APPLIED`
+
+### 6c — CLAUDE.md Health Check
 
 Review current `CLAUDE.md`. Ask:
 1. Are the key project commands still accurate?
-2. Are there new patterns or conventions to add?
+2. Are there new patterns or conventions to add from lessons?
 3. Is the redaction list complete?
 4. Are any sections outdated?
 

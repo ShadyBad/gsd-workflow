@@ -8,7 +8,7 @@
         "source": "github",
         "repo": "ShadyBad/gsd-workflow"
       },
-      "description": "GSD Workflow Engine — /dev command that auto-classifies and drives any task to DONE",
+      "description": "GSD Workflow Engine — /ship command that auto-classifies and drives any task to DONE",
       "version": "1.0.0",
       "strict": true
     }
