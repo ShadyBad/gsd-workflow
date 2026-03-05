@@ -370,7 +370,7 @@ Gate: Scope locked, acceptance criteria defined + user-confirmed, next actions e
 
 **Spawn role-locked agents to review the approach before implementation.** This catches design flaws, security gaps, and blind spots early.
 
-Check `capabilities.yaml` agent_spawn limits. You may spawn up to 3 agents for this phase.
+Check `capabilities.yaml` agent_spawn limits. You may spawn up to 4 agents for this phase (3 required + 1 conditional).
 
 **Required reviewers** (spawn each as a sub-agent with the Agent tool):
 

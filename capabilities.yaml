@@ -39,7 +39,7 @@ command_exec:
 
 agent_spawn:
   enabled: true
-  max_per_phase: 3
+  max_per_phase: 4
   max_per_run: 15
   require_role: true
   roles:

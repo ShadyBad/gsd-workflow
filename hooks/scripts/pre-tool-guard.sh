@@ -58,8 +58,8 @@ check_denylists() {
     
     local denied_patterns=(
       "rm -rf /"
-      "curl.*| bash"
-      "wget.*| bash"
+      "curl.*[|].*bash"
+      "wget.*[|].*bash"
       "sudo "
       "> .env$"
       "> .env\."
