@@ -4,10 +4,7 @@
   "plugins": [
     {
       "name": "gsd-ship",
-      "source": {
-        "source": "github",
-        "repo": "ShadyBad/gsd-workflow"
-      },
+      "source": ".",
       "description": "GSD Workflow Engine — /ship command that auto-classifies and drives any task to DONE",
       "version": "2.0.0",
       "strict": true
